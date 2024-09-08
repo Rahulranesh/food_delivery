@@ -1,0 +1,62 @@
+name: food_delivery
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.4 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  provider: ^6.1.2
+  collection: ^1.18.0
+  flutter_credit_card: ^4.0.1
+  firebase_core: ^3.3.0
+  firebase_auth: ^5.1.4
+  cloud_firestore: ^5.2.1
+  url_launcher: 
+  rive:
+  flutter_launcher_icons: ^0.13.1
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "images/foodlogo1.png" 
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - images/burgers/burger1.jpg
+    - images/burgers/burger2.jpg
+    - images/burgers/burger3.jpg
+    - images/burgers/burger4.jpg
+    - images/salads/salad1.jpg
+    - images/salads/salad2.jpg
+    - images/salads/salad3.jpg
+    - images/salads/salad4.jpg
+    - images/sides/sides1.jpg
+    - images/sides/sides2.jpg
+    - images/sides/sides3.jpg
+    - images/sides/sides4.jpg
+    - images/desserts/desserts1.jpg
+    - images/desserts/desserts2.jpg
+    - images/desserts/desserts3.jpg
+    - images/desserts/desserts4.jpg
+    - images/drinks/drink1.jpg
+    - images/drinks/drink2.jpg
+    - images/drinks/drink3.jpg
+    - images/drinks/drink4.jpg
+    - images/foodlogo1.png
+
+    
+   
