@@ -1,42 +1,64 @@
+// components/my_current_location.dart
 import 'package:flutter/material.dart';
-import 'package:food_delivery/models/restaurant.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:provider/provider.dart';
+import 'package:food_delivery/models/restaurant.dart';
 
-class MyCurrentLocation extends StatelessWidget {
-  final TextEditingController textController = TextEditingController();
+class MyCurrentLocation extends StatefulWidget {
+  const MyCurrentLocation({Key? key}) : super(key: key);
 
-  void openLocationSearchBox(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Your location'),
-          content: TextField(
-            controller: textController,
-            decoration: const InputDecoration(hintText: 'Enter Address'),
-          ),
-          actions: [
-            MaterialButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            MaterialButton(
-              onPressed: () {
-                // Update address
-                String newAddress = textController.text;
-                Provider.of<Restaurant>(context, listen: false)
-                    .updateDeliveryAddress(newAddress);
-                Navigator.pop(context);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
+  @override
+  State<MyCurrentLocation> createState() => _MyCurrentLocationState();
+}
+
+class _MyCurrentLocationState extends State<MyCurrentLocation> {
+  String currentAddress = 'Unknown';
+
+  Future<void> _getCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Check if location services are enabled.
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Location services are disabled.')));
+      return;
+    }
+
+    // Request permission.
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Location permission denied.')));
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permissions are permanently denied.')));
+      return;
+    }
+
+    // Get the current position.
+    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+
+    // Reverse geocode to get the address.
+    List<Placemark> placemarks =
+        await placemarkFromCoordinates(position.latitude, position.longitude);
+    Placemark place = placemarks[0];
+    setState(() {
+      currentAddress =
+          "${place.street}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
+    });
+
+    // Update the address in Restaurant provider.
+    Provider.of<Restaurant>(context, listen: false).updateDeliveryAddress(currentAddress);
   }
-
-  MyCurrentLocation({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -52,19 +74,20 @@ class MyCurrentLocation extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          GestureDetector(
-            onTap: () => openLocationSearchBox(context),
-            child: Row(
-              children: [
-                // address
-                Consumer<Restaurant>(
+          Row(
+            children: [
+              Expanded(
+                child: Consumer<Restaurant>(
                   builder: (context, restaurant, child) =>
                       Text(restaurant.deliveryAddress),
                 ),
-                // drop-down menu
-                const Icon(Icons.keyboard_arrow_down_rounded),
-              ],
-            ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.my_location),
+                onPressed: _getCurrentLocation,
+              ),
+              const Icon(Icons.keyboard_arrow_down_rounded),
+            ],
           ),
         ],
       ),

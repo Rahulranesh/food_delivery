@@ -1,14 +1,17 @@
+// components/my_drawer.dart
 import 'package:flutter/material.dart';
 import 'package:food_delivery/components/my_drawer_tile.dart';
 import 'package:food_delivery/pages/settings_page.dart';
+import 'package:food_delivery/pages/order_history.dart';
 import 'package:food_delivery/services/auth_service.dart';
 
 class MyDrawer extends StatelessWidget {
-  const MyDrawer({super.key});
+  const MyDrawer({Key? key}) : super(key: key);
 
-  void logout() {
+  void logout(BuildContext context) {
     final authService = AuthService();
     authService.signOut();
+    Navigator.pop(context);
   }
 
   @override
@@ -17,7 +20,6 @@ class MyDrawer extends StatelessWidget {
       backgroundColor: Theme.of(context).colorScheme.background,
       child: Column(
         children: [
-          //logo
           Padding(
             padding: const EdgeInsets.only(top: 80.0),
             child: Icon(
@@ -32,36 +34,33 @@ class MyDrawer extends StatelessWidget {
               color: Theme.of(context).colorScheme.secondary,
             ),
           ),
-
-          //home list tile
           MyDrawerTile(
             icon: Icons.home,
             onTap: () => Navigator.pop(context),
             text: 'H O M E ',
           ),
-          //settings list tile
+          MyDrawerTile(
+            icon: Icons.history,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const OrderHistoryPage()));
+            },
+            text: 'O R D E R  H I S T O R Y',
+          ),
           MyDrawerTile(
             icon: Icons.settings,
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SettingsPage(),
-                ),
-              );
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const SettingsPage()));
             },
             text: 'S E T T I N G S ',
           ),
           const Spacer(),
-          //logout list tile
           MyDrawerTile(
             icon: Icons.logout,
-            onTap: () {
-              logout();
-              Navigator.pop(
-                  context); // Optionally close the drawer after logout
-            },
+            onTap: () => logout(context),
             text: 'L O G O U T ',
           ),
           const SizedBox(

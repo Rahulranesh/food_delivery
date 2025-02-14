@@ -1,13 +1,15 @@
+// pages/payment_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_credit_card/flutter_credit_card.dart';
 import 'package:food_delivery/components/my_button.dart';
 import 'package:food_delivery/models/restaurant.dart';
 import 'package:food_delivery/pages/delivery_progress.dart';
-
 import 'package:provider/provider.dart';
 
+enum PaymentMethod { creditCard, googlePay }
+
 class PaymentPage extends StatefulWidget {
-  const PaymentPage({super.key});
+  const PaymentPage({Key? key}) : super(key: key);
 
   @override
   State<PaymentPage> createState() => _PaymentPageState();
@@ -20,51 +22,78 @@ class _PaymentPageState extends State<PaymentPage> {
   String cardHolderName = '';
   String cvvCode = '';
   bool isCvvFocused = false;
+  PaymentMethod selectedMethod = PaymentMethod.creditCard;
 
-  // User tapped Pay
   void userTappedPay() {
-    if (formKey.currentState!.validate()) {
-      final restaurant = Provider.of<Restaurant>(context, listen: false);
-      String receipt = restaurant.generateReceipt();
-
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Confirm Payment'),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Card Number: $cardNumber'),
-                Text('Expiry Date: $expiryDate'),
-                Text('Card Holder Name: $cardHolderName'),
-                Text('CVV: $cvvCode'),
-                SizedBox(height: 20),
-                Text('Receipt:'),
-                SizedBox(height: 10),
-                Text(receipt),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => DeliveryProgressPage()),
-                );
-              },
-              child: Text('Yes'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel'),
-            ),
-          ],
-        ),
-      );
+    if (selectedMethod == PaymentMethod.creditCard) {
+      if (formKey.currentState!.validate()) {
+        _confirmPayment();
+      }
+    } else if (selectedMethod == PaymentMethod.googlePay) {
+      _processGooglePay();
     }
+  }
+
+  void _confirmPayment() {
+    final restaurant = Provider.of<Restaurant>(context, listen: false);
+    String receipt = restaurant.generateReceipt();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Payment'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Card Number: $cardNumber'),
+              Text('Expiry Date: $expiryDate'),
+              Text('Card Holder Name: $cardHolderName'),
+              Text('CVV: $cvvCode'),
+              const SizedBox(height: 20),
+              const Text('Receipt:'),
+              const SizedBox(height: 10),
+              Text(receipt),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => DeliveryProgressPage()));
+            },
+            child: const Text('Yes'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _processGooglePay() {
+    // Here you would integrate with a Google Pay plugin.
+    // For simulation, we simply show a confirmation dialog.
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Google Pay'),
+        content: const Text('Processing Google Pay payment...'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => DeliveryProgressPage()));
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -74,45 +103,82 @@ class _PaymentPageState extends State<PaymentPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text('Check Out'),
+        title: const Text('Check Out'),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           children: [
-            CreditCardWidget(
-              cardNumber: cardNumber,
-              expiryDate: expiryDate,
-              cardHolderName: cardHolderName,
-              cvvCode: cvvCode,
-              showBackView: isCvvFocused,
-              onCreditCardWidgetChange: (p0) {},
+            // Payment method selection
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Radio<PaymentMethod>(
+                  value: PaymentMethod.creditCard,
+                  groupValue: selectedMethod,
+                  onChanged: (PaymentMethod? value) {
+                    setState(() {
+                      selectedMethod = value!;
+                    });
+                  },
+                ),
+                const Text('Credit/Debit Card'),
+                Radio<PaymentMethod>(
+                  value: PaymentMethod.googlePay,
+                  groupValue: selectedMethod,
+                  onChanged: (PaymentMethod? value) {
+                    setState(() {
+                      selectedMethod = value!;
+                    });
+                  },
+                ),
+                const Text('Google Pay'),
+              ],
             ),
-            SizedBox(height: 20),
-            CreditCardForm(
-              formKey: formKey,
-              cardNumber: cardNumber,
-              expiryDate: expiryDate,
-              cardHolderName: cardHolderName,
-              cvvCode: cvvCode,
-              onCreditCardModelChange: (data) {
-                setState(() {
-                  cardNumber = data.cardNumber;
-                  expiryDate = data.expiryDate;
-                  cardHolderName = data.cardHolderName;
-                  cvvCode = data.cvvCode;
-                  isCvvFocused = data.isCvvFocused;
-                });
-              },
-              obscureCvv: true,
-              obscureNumber: false,
-            ),
-            SizedBox(height: 20),
+            if (selectedMethod == PaymentMethod.creditCard) ...[
+              CreditCardWidget(
+                cardNumber: cardNumber,
+                expiryDate: expiryDate,
+                cardHolderName: cardHolderName,
+                cvvCode: cvvCode,
+                showBackView: isCvvFocused,
+                onCreditCardWidgetChange: (p0) {},
+              ),
+              const SizedBox(height: 20),
+              CreditCardForm(
+                formKey: formKey,
+                cardNumber: cardNumber,
+                expiryDate: expiryDate,
+                cardHolderName: cardHolderName,
+                cvvCode: cvvCode,
+                onCreditCardModelChange: (data) {
+                  setState(() {
+                    cardNumber = data.cardNumber;
+                    expiryDate = data.expiryDate;
+                    cardHolderName = data.cardHolderName;
+                    cvvCode = data.cvvCode;
+                    isCvvFocused = data.isCvvFocused;
+                  });
+                },
+                obscureCvv: true,
+                obscureNumber: false,
+              ),
+            ] else if (selectedMethod == PaymentMethod.googlePay) ...[
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: const Text(
+                  'You have selected Google Pay. Press "Pay now" to proceed.',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
             MyButton(
               onTap: userTappedPay,
               text: 'Pay now',
             ),
-            SizedBox(height: 25),
+            const SizedBox(height: 25),
           ],
         ),
       ),
