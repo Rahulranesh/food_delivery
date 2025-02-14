@@ -86,7 +86,7 @@ class _MyCurrentLocationState extends State<MyCurrentLocation> {
                 icon: const Icon(Icons.my_location),
                 onPressed: _getCurrentLocation,
               ),
-              const Icon(Icons.keyboard_arrow_down_rounded),
+              const Icon(Icons.keyboard_arrow_down_rounded)
             ],
           ),
         ],
