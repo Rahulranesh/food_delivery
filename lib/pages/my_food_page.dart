@@ -6,143 +6,88 @@ import 'package:provider/provider.dart';
 
 class FoodPage extends StatefulWidget {
   final Food food;
+  // Maintain a map of add-on selections.
   final Map<Addon, bool> selectedAddons = {};
-  FoodPage({
-    super.key,
-    required this.food,
-  }) {
+  FoodPage({Key? key, required this.food}) : super(key: key) {
     for (Addon addon in food.availableAddons) {
       selectedAddons[addon] = false;
     }
   }
-
   @override
   State<FoodPage> createState() => _FoodPageState();
 }
 
 class _FoodPageState extends State<FoodPage> {
-  //method to create add cart
-  void addToCart(Food food, Map<Addon, bool> selectedAddons) {
-    //close the foodPage to go back to menu
-    Navigator.pop(context);
-
-    //format the selected addon
-
+  void addToCart() {
     List<Addon> currentlySelectedAddons = [];
     for (Addon addon in widget.food.availableAddons) {
       if (widget.selectedAddons[addon] == true) {
         currentlySelectedAddons.add(addon);
       }
     }
-    context.read<Restaurant>().addToCart(food, currentlySelectedAddons);
+    Provider.of<Restaurant>(context, listen: false)
+        .addToCart(widget.food, currentlySelectedAddons);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${widget.food.name} added to cart')),
+    );
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Scaffold(
-          appBar: AppBar(),
-          body: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Image.asset(widget.food.imagePath),
-                Padding(
-                  padding: const EdgeInsets.all(25.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.food.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        '\$${widget.food.price}',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        widget.food.description,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Add-ons',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.secondary,
-                          ),
-                        ),
-                        child: ListView.builder(
-                          itemCount: widget.food.availableAddons.length,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemBuilder: (context, index) {
-                            final addon = widget.food.availableAddons[index];
-                            return CheckboxListTile(
-                              value: widget.selectedAddons[addon],
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  widget.selectedAddons[addon] = value!;
-                                });
-                              },
-                              title: Text(addon.name),
-                              subtitle: Text(
-                                '\$${addon.price}',
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                MyButton(
-                    onTap: () => addToCart(widget.food, widget.selectedAddons),
-                    text: 'Add to Cart'),
-                SizedBox(
-                  height: 25,
-                ),
-              ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.food.name),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Image.asset(widget.food.imageUrl,
+                width: double.infinity, height: 250, fit: BoxFit.cover),
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(widget.food.description,
+                  style: const TextStyle(fontSize: 16)),
             ),
-          ),
-        ),
-
-        //back-button
-        SafeArea(
-          child: Opacity(
-            opacity: 0.6,
-            child: Container(
-              margin: EdgeInsets.only(left: 25),
-              child: IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: Icon(Icons.arrow_back_ios_rounded),
+            if (widget.food.availableAddons.isNotEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  'Select Add-ons',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
               ),
-              decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondary,
-                  shape: BoxShape.circle),
-            ),
-          ),
-        )
-      ],
+            if (widget.food.availableAddons.isNotEmpty)
+              const Divider(),
+            if (widget.food.availableAddons.isNotEmpty)
+              ListView.separated(
+                separatorBuilder: (context, index) => const Divider(),
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: widget.food.availableAddons.length,
+                itemBuilder: (context, index) {
+                  final addon = widget.food.availableAddons[index];
+                  return CheckboxListTile(
+                    value: widget.selectedAddons[addon],
+                    onChanged: (bool? value) {
+                      setState(() {
+                        widget.selectedAddons[addon] = value!;
+                      });
+                    },
+                    title: Text(addon.name),
+                    subtitle:
+                        Text('\$${addon.price.toStringAsFixed(2)}'),
+                  );
+                },
+              ),
+            const SizedBox(height: 20),
+            Center(child: MyButton(onTap: addToCart, text: 'Add to Cart')),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -35,6 +35,7 @@ class _PaymentPageState extends State<PaymentPage> {
   void _confirmPayment() {
     final restaurant = Provider.of<Restaurant>(context, listen: false);
     String receipt = restaurant.generateReceipt();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -48,7 +49,7 @@ class _PaymentPageState extends State<PaymentPage> {
               Text('Card Holder Name: $cardHolderName'),
               Text('CVV: $cvvCode'),
               const SizedBox(height: 20),
-              const Text('Receipt:'),
+              const Text('Receipt Preview:'),
               const SizedBox(height: 10),
               Text(receipt),
             ],
@@ -57,13 +58,25 @@ class _PaymentPageState extends State<PaymentPage> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => const DeliveryProgressPage()));
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        const DeliveryProgressPage(paymentSuccessful: true)),
+              );
             },
-            child: const Text('Yes'),
+            child: const Text('Pay'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              Provider.of<Restaurant>(context, listen: false).clearCart();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        const DeliveryProgressPage(paymentSuccessful: false)),
+              );
+            },
             child: const Text('Cancel'),
           ),
         ],
@@ -72,7 +85,7 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   void _processGooglePay() {
-    // Simulated Google Pay flow
+    // Simulated Google Pay flow.
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -82,10 +95,27 @@ class _PaymentPageState extends State<PaymentPage> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => const DeliveryProgressPage()));
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        const DeliveryProgressPage(paymentSuccessful: true)),
+              );
             },
             child: const Text('OK'),
+          ),
+          TextButton(
+            onPressed: () {
+              Provider.of<Restaurant>(context, listen: false).clearCart();
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        const DeliveryProgressPage(paymentSuccessful: false)),
+              );
+            },
+            child: const Text('Cancel'),
           ),
         ],
       ),
@@ -98,7 +128,6 @@ class _PaymentPageState extends State<PaymentPage> {
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        foregroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('Check Out'),
       ),
       body: SingleChildScrollView(
@@ -111,7 +140,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 Radio<PaymentMethod>(
                   value: PaymentMethod.creditCard,
                   groupValue: selectedMethod,
-                  onChanged: (PaymentMethod? value) {
+                  onChanged: (value) {
                     setState(() {
                       selectedMethod = value!;
                     });
@@ -121,7 +150,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 Radio<PaymentMethod>(
                   value: PaymentMethod.googlePay,
                   groupValue: selectedMethod,
-                  onChanged: (PaymentMethod? value) {
+                  onChanged: (value) {
                     setState(() {
                       selectedMethod = value!;
                     });
@@ -137,7 +166,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 cardHolderName: cardHolderName,
                 cvvCode: cvvCode,
                 showBackView: isCvvFocused,
-                onCreditCardWidgetChange: (p0) {},
+                onCreditCardWidgetChange: (data) {},
               ),
               const SizedBox(height: 20),
               CreditCardForm(

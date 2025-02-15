@@ -17,9 +17,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Chat with ${widget.driverName}'),
-      ),
+      appBar: AppBar(title: Text('Chat with ${widget.driverName}')),
       body: Column(
         children: [
           Expanded(
@@ -31,16 +29,32 @@ class _ChatScreenState extends State<ChatScreen> {
                   .orderBy('timestamp', descending: true)
                   .snapshots(),
               builder: (context, AsyncSnapshot snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
                 return ListView.builder(
                   reverse: true,
                   itemCount: snapshot.data.docs.length,
                   itemBuilder: (context, index) {
                     var message = snapshot.data.docs[index];
                     bool isMe = message['senderId'] == _auth.currentUser?.uid;
-                    return _buildMessage(message['text'], isMe, message['senderName']);
+                    return Align(
+                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+                        decoration: BoxDecoration(
+                          color: isMe ? Colors.blueAccent.withOpacity(0.8) : Colors.grey.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                          children: [
+                            Text(message['senderName'] ?? '',
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
+                            Text(message['text'] ?? '', style: const TextStyle(color: Colors.white)),
+                          ],
+                        ),
+                      ),
+                    );
                   },
                 );
               },
@@ -51,29 +65,7 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
     );
   }
-
-  Widget _buildMessage(String message, bool isMe, String senderName) {
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-        decoration: BoxDecoration(
-          color: isMe ? Colors.blueAccent.withOpacity(0.8) : Colors.grey.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            Text(senderName,
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
-            Text(message, style: const TextStyle(color: Colors.white)),
-          ],
-        ),
-      ),
-    );
-  }
-
+  
   Widget _buildMessageInput() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -88,15 +80,12 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: _sendMessage,
-          ),
+          IconButton(icon: const Icon(Icons.send), onPressed: _sendMessage),
         ],
       ),
     );
   }
-
+  
   void _sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
     var user = _auth.currentUser;
@@ -106,14 +95,10 @@ class _ChatScreenState extends State<ChatScreen> {
       'senderName': user?.displayName ?? 'Customer',
       'timestamp': FieldValue.serverTimestamp(),
     };
-    await _firestore
-        .collection('chats')
-        .doc(_getChatId())
-        .collection('messages')
-        .add(message);
+    await _firestore.collection('chats').doc(_getChatId()).collection('messages').add(message);
     _messageController.clear();
   }
-
+  
   String _getChatId() {
     var userId = _auth.currentUser?.uid ?? '';
     var driverId = widget.driverId;

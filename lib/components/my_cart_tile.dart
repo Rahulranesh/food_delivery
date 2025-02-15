@@ -27,7 +27,7 @@ class MyCartTile extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.asset(
-                    cartItem.food.imagePath,
+                    cartItem.food.imageUrl,
                     height: 100,
                     width: 100,
                     fit: BoxFit.cover,
@@ -58,6 +58,7 @@ class MyCartTile extends StatelessWidget {
                     ],
                   ),
                 ),
+                
 
                 // Increment or decrement quantity
                 MyQuantitySelector(

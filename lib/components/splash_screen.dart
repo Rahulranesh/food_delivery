@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:food_delivery/services/auth_gate.dart';
