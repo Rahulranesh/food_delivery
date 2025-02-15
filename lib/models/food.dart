@@ -37,19 +37,35 @@ class Food {
   });
 
   factory Food.fromMap(Map<String, dynamic> data) {
+    // Retrieve the availableAddons data from Firestore.
+    final availableAddonsData = data['availableAddons'];
+    List<dynamic> addonsList;
+
+    if (availableAddonsData is List) {
+      addonsList = availableAddonsData;
+    } else if (availableAddonsData is Map) {
+      addonsList = availableAddonsData.values.toList();
+    } else {
+      addonsList = [];
+    }
+
+    // Filter out any entries that are not maps.
+    final List<Addon> addons = addonsList
+        .where((addonData) => addonData is Map<String, dynamic>)
+        .map((addonData) => Addon.fromMap(addonData as Map<String, dynamic>))
+        .toList();
+
     return Food(
       name: data['name'] ?? '',
       description: data['description'] ?? '',
       imagePath: data['imagePath'] ?? '',
-      price: data['price'] ?? '0.00',
+      // Convert the price to a string in case it's stored as a number.
+      price: (data['price'] ?? '0.00').toString(),
       category: FoodCategory.values.firstWhere(
-          (e) => e.toString() == 'FoodCategory.${data['category']}',
-          orElse: () => FoodCategory.burgers),
-      availableAddons: (data['availableAddons'] as List<dynamic>?)
-              ?.map((addonData) =>
-                  Addon.fromMap(addonData as Map<String, dynamic>))
-              .toList() ??
-          [],
+        (e) => e.toString() == 'FoodCategory.${data['category']}',
+        orElse: () => FoodCategory.burgers,
+      ),
+      availableAddons: addons,
     );
   }
 }
