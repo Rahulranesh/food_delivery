@@ -5,9 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 class ChatScreen extends StatefulWidget {
   final String driverName;
   final String driverId;
-
-  ChatScreen({required this.driverName, required this.driverId});
-
+  const ChatScreen({Key? key, required this.driverName, required this.driverId}) : super(key: key);
   @override
   _ChatScreenState createState() => _ChatScreenState();
 }
@@ -16,7 +14,6 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,19 +30,17 @@ class _ChatScreenState extends State<ChatScreen> {
                   .collection('messages')
                   .orderBy('timestamp', descending: true)
                   .snapshots(),
-              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+              builder: (context, AsyncSnapshot snapshot) {
                 if (!snapshot.hasData) {
-                  return Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator());
                 }
-
                 return ListView.builder(
                   reverse: true,
-                  itemCount: snapshot.data!.docs.length,
+                  itemCount: snapshot.data.docs.length,
                   itemBuilder: (context, index) {
-                    var message = snapshot.data!.docs[index];
-                    bool isMe = message['senderId'] == _auth.currentUser!.uid;
-                    return _buildMessage(
-                        message['text'], isMe, message['senderName']);
+                    var message = snapshot.data.docs[index];
+                    bool isMe = message['senderId'] == _auth.currentUser?.uid;
+                    return _buildMessage(message['text'], isMe, message['senderName']);
                   },
                 );
               },
@@ -61,31 +56,18 @@ class _ChatScreenState extends State<ChatScreen> {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-        padding: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
         decoration: BoxDecoration(
-          color: isMe
-              ? Colors.blueAccent.withOpacity(0.8)
-              : Colors.grey.withOpacity(0.5),
+          color: isMe ? Colors.blueAccent.withOpacity(0.8) : Colors.grey.withOpacity(0.5),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
-          crossAxisAlignment:
-              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            Text(
-              senderName,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white70,
-              ),
-            ),
-            Text(
-              message,
-              style: TextStyle(
-                color: Colors.white,
-              ),
-            ),
+            Text(senderName,
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
+            Text(message, style: const TextStyle(color: Colors.white)),
           ],
         ),
       ),
@@ -100,16 +82,14 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: TextField(
               controller: _messageController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Type a message',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
               ),
             ),
           ),
           IconButton(
-            icon: Icon(Icons.send),
+            icon: const Icon(Icons.send),
             onPressed: _sendMessage,
           ),
         ],
@@ -118,32 +98,25 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _sendMessage() async {
-    if (_messageController.text.trim().isEmpty) {
-      return;
-    }
-
+    if (_messageController.text.trim().isEmpty) return;
     var user = _auth.currentUser;
     var message = {
       'text': _messageController.text.trim(),
-      'senderId': user!.uid,
-      'senderName': user.displayName ?? 'Unknown',
+      'senderId': user?.uid,
+      'senderName': user?.displayName ?? 'Customer',
       'timestamp': FieldValue.serverTimestamp(),
     };
-
     await _firestore
         .collection('chats')
         .doc(_getChatId())
         .collection('messages')
         .add(message);
-
     _messageController.clear();
   }
 
   String _getChatId() {
-    var userId = _auth.currentUser!.uid;
+    var userId = _auth.currentUser?.uid ?? '';
     var driverId = widget.driverId;
-    return userId.compareTo(driverId) > 0
-        ? '$userId\_$driverId'
-        : '$driverId\_$userId';
+    return userId.compareTo(driverId) > 0 ? '$userId\_$driverId' : '$driverId\_$userId';
   }
 }

@@ -1,4 +1,3 @@
-// components/my_drawer.dart
 import 'package:flutter/material.dart';
 import 'package:food_delivery/components/my_drawer_tile.dart';
 import 'package:food_delivery/pages/settings_page.dart';
@@ -22,29 +21,24 @@ class MyDrawer extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 80.0),
-            child: Icon(
-              Icons.lock_open_rounded,
-              size: 40,
-              color: Theme.of(context).colorScheme.inversePrimary,
-            ),
+            child: Icon(Icons.lock_open_rounded,
+                size: 40, color: Theme.of(context).colorScheme.inversePrimary),
           ),
           Padding(
             padding: const EdgeInsets.all(25.0),
-            child: Divider(
-              color: Theme.of(context).colorScheme.secondary,
-            ),
+            child: Divider(color: Theme.of(context).colorScheme.secondary),
           ),
           MyDrawerTile(
             icon: Icons.home,
             onTap: () => Navigator.pop(context),
-            text: 'H O M E ',
+            text: 'H O M E',
           ),
           MyDrawerTile(
             icon: Icons.history,
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => const OrderHistoryPage()));
+              Navigator.push(
+                  context, MaterialPageRoute(builder: (context) => const OrderHistoryPage()));
             },
             text: 'O R D E R  H I S T O R Y',
           ),
@@ -52,20 +46,18 @@ class MyDrawer extends StatelessWidget {
             icon: Icons.settings,
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => const SettingsPage()));
+              Navigator.push(
+                  context, MaterialPageRoute(builder: (context) => const SettingsPage()));
             },
-            text: 'S E T T I N G S ',
+            text: 'S E T T I N G S',
           ),
           const Spacer(),
           MyDrawerTile(
             icon: Icons.logout,
             onTap: () => logout(context),
-            text: 'L O G O U T ',
+            text: 'L O G O U T',
           ),
-          const SizedBox(
-            height: 25,
-          ),
+          const SizedBox(height: 25),
         ],
       ),
     );

@@ -1,4 +1,3 @@
-// pages/payment_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_credit_card/flutter_credit_card.dart';
 import 'package:food_delivery/components/my_button.dart';
@@ -10,7 +9,6 @@ enum PaymentMethod { creditCard, googlePay }
 
 class PaymentPage extends StatefulWidget {
   const PaymentPage({Key? key}) : super(key: key);
-
   @override
   State<PaymentPage> createState() => _PaymentPageState();
 }
@@ -37,7 +35,6 @@ class _PaymentPageState extends State<PaymentPage> {
   void _confirmPayment() {
     final restaurant = Provider.of<Restaurant>(context, listen: false);
     String receipt = restaurant.generateReceipt();
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -61,7 +58,7 @@ class _PaymentPageState extends State<PaymentPage> {
           TextButton(
             onPressed: () {
               Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => DeliveryProgressPage()));
+                  MaterialPageRoute(builder: (context) => const DeliveryProgressPage()));
             },
             child: const Text('Yes'),
           ),
@@ -75,8 +72,7 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   void _processGooglePay() {
-    // Here you would integrate with a Google Pay plugin.
-    // For simulation, we simply show a confirmation dialog.
+    // Simulated Google Pay flow
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -87,7 +83,7 @@ class _PaymentPageState extends State<PaymentPage> {
             onPressed: () {
               Navigator.pop(context);
               Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => DeliveryProgressPage()));
+                  MaterialPageRoute(builder: (context) => const DeliveryProgressPage()));
             },
             child: const Text('OK'),
           ),
@@ -109,7 +105,6 @@ class _PaymentPageState extends State<PaymentPage> {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           children: [
-            // Payment method selection
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -174,10 +169,7 @@ class _PaymentPageState extends State<PaymentPage> {
               ),
             ],
             const SizedBox(height: 20),
-            MyButton(
-              onTap: userTappedPay,
-              text: 'Pay now',
-            ),
+            MyButton(onTap: userTappedPay, text: 'Pay now'),
             const SizedBox(height: 25),
           ],
         ),

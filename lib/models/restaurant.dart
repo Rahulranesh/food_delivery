@@ -1,4 +1,3 @@
-// models/restaurant.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:food_delivery/models/food.dart';
@@ -7,18 +6,23 @@ import 'package:food_delivery/models/cart_item.dart';
 class Restaurant extends ChangeNotifier {
   List<Food> _menu = [];
   List<Food> get menu => _menu;
-  
-  // Delivery address (initially a placeholder)
+
+  // Delivery address and coordinates
   String _deliveryAddress = 'Fetching...';
   String get deliveryAddress => _deliveryAddress;
-  
+  GeoPoint? _deliveryCoordinates;
+  GeoPoint? get deliveryCoordinates => _deliveryCoordinates;
+
   // User cart
   final List<CartItem> _cart = [];
   List<CartItem> get cart => _cart;
 
+  // Favourites list
+  final List<Food> _favourites = [];
+  List<Food> get favourites => _favourites;
+
   Restaurant() {
     fetchMenu();
-    // Optionally, fetch a saved delivery address from the user profile here.
   }
 
   Future<void> fetchMenu() async {
@@ -30,22 +34,30 @@ class Restaurant extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- Cart and order functions remain as before ---
-  void addToCart(Food food, List<Addon> selectedAddons) {
-    // [Your addToCart implementation...]
+  void addToCart(Food food, [List<Addon> selectedAddons = const []]) {
+    // Simplified: add item with quantity 1
+    _cart.add(CartItem(food: food, selectedAddons: selectedAddons));
+    notifyListeners();
   }
 
   void removeFromCart(CartItem cartItem) {
-    // [Your removeFromCart implementation...]
+    int index = _cart.indexOf(cartItem);
+    if (index != -1) {
+      if (_cart[index].quantity > 1) {
+        _cart[index].quantity--;
+      } else {
+        _cart.removeAt(index);
+      }
+      notifyListeners();
+    }
   }
 
   double getTotalPrice() {
-    // [Your total price calculation...]
     double total = 0.0;
     for (var cartItem in _cart) {
-      double itemPrice = double.tryParse(cartItem.food.price) ?? 0.0;
+      double foodPrice = double.tryParse(cartItem.food.price) ?? 0.0;
       double addonsPrice = cartItem.selectedAddons.fold(0.0, (sum, addon) => sum + addon.price);
-      total += (itemPrice + addonsPrice) * cartItem.quantity;
+      total += (foodPrice + addonsPrice) * cartItem.quantity;
     }
     return total;
   }
@@ -64,12 +76,27 @@ class Restaurant extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateDeliveryCoordinates(GeoPoint coordinates) {
+    _deliveryCoordinates = coordinates;
+    notifyListeners();
+  }
+
+  void addToFavourites(Food food) {
+    if (!_favourites.contains(food)) {
+      _favourites.add(food);
+      notifyListeners();
+    }
+  }
+
+  void removeFromFavourites(Food food) {
+    _favourites.remove(food);
+    notifyListeners();
+  }
+
   String generateReceipt() {
-    // [Your receipt generation code...]
     StringBuffer receiptBuffer = StringBuffer();
     receiptBuffer.writeln('Receipt:');
     receiptBuffer.writeln('------------------------');
-
     for (var cartItem in _cart) {
       receiptBuffer.writeln('${cartItem.food.name} x${cartItem.quantity}');
       for (var addon in cartItem.selectedAddons) {

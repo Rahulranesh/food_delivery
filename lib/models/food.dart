@@ -1,4 +1,3 @@
-// models/food.dart
 enum FoodCategory {
   burgers,
   salads,

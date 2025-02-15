@@ -1,41 +1,89 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:food_delivery/components/my_receipt.dart';
-import 'package:food_delivery/database/firestore.dart';
 import 'package:food_delivery/models/restaurant.dart';
 import 'package:food_delivery/pages/chat_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class DeliveryProgressPage extends StatefulWidget {
-  const DeliveryProgressPage({super.key});
-
+  const DeliveryProgressPage({Key? key}) : super(key: key);
   @override
   State<DeliveryProgressPage> createState() => _DeliveryProgressPageState();
 }
 
 class _DeliveryProgressPageState extends State<DeliveryProgressPage> {
-  final FirestoreService db = FirestoreService();
+  // Assigned driver details
+  String driverName = "Not Assigned";
+  String driverPhone = "";
+  String driverId = "";
+  bool isDriverAssigned = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _assignDriver();
     _saveOrder();
   }
 
-  void _saveOrder() async {
-    String receipt = context.read<Restaurant>().generateReceipt();
-    try {
-      await db.saveOrderToDatabase(receipt);
-    } catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save order: $error')),
-      );
+  Future<void> _assignDriver() async {
+    final restaurant = Provider.of<Restaurant>(context, listen: false);
+    if (restaurant.deliveryCoordinates == null) return;
+    GeoPoint userLocation = restaurant.deliveryCoordinates!;
+
+    QuerySnapshot snapshot = await FirebaseFirestore.instance
+        .collection('drivers')
+        .where('status', isEqualTo: 'available')
+        .get();
+
+    double minDistance = double.infinity;
+    String selectedDriverId = "";
+    String selectedDriverName = "";
+    String selectedDriverPhone = "";
+    for (var doc in snapshot.docs) {
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+      GeoPoint driverLocation = data['location'];
+      double distance = Geolocator.distanceBetween(
+          userLocation.latitude,
+          userLocation.longitude,
+          driverLocation.latitude,
+          driverLocation.longitude);
+      if (distance < minDistance) {
+        minDistance = distance;
+        selectedDriverId = doc.id;
+        selectedDriverName = data['name'] ?? 'Driver';
+        selectedDriverPhone = data['phone'] ?? '';
+      }
+    }
+    if (selectedDriverId.isNotEmpty) {
+      await FirebaseFirestore.instance
+          .collection('drivers')
+          .doc(selectedDriverId)
+          .update({'status': 'busy'});
+      setState(() {
+        driverId = selectedDriverId;
+        driverName = selectedDriverName;
+        driverPhone = selectedDriverPhone;
+        isDriverAssigned = true;
+      });
     }
   }
 
-  // Mock driver details
-  final String driverName = "Srikan";
-  final String driverPhone = "+1234567890";
+  void _saveOrder() async {
+    final restaurant = Provider.of<Restaurant>(context, listen: false);
+    String receipt = restaurant.generateReceipt();
+    try {
+      await FirebaseFirestore.instance.collection('orders').add({
+        'date': DateTime.now(),
+        'order': receipt,
+        'driverId': driverId,
+      });
+    } catch (error) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed to save order: $error')));
+    }
+  }
 
   void _showDriverDetails() {
     showDialog(
@@ -43,27 +91,16 @@ class _DeliveryProgressPageState extends State<DeliveryProgressPage> {
       builder: (context) => AlertDialog(
         title: Text('Driver Details'),
         content: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Name: $driverName',
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary),
-            ),
-            Text(
-              'Phone: $driverPhone',
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary),
-            ),
+            Text('Name: $driverName', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text('Phone: $driverPhone', style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Close'),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -71,16 +108,12 @@ class _DeliveryProgressPageState extends State<DeliveryProgressPage> {
   }
 
   void _callDriver() async {
-    final Uri url = Uri(
-      scheme: 'tel',
-      path: driverPhone,
-    );
+    final Uri url = Uri(scheme: 'tel', path: driverPhone);
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not launch phone dialer')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Could not launch phone dialer')));
     }
   }
 
@@ -88,24 +121,21 @@ class _DeliveryProgressPageState extends State<DeliveryProgressPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            ChatScreen(driverName: driverName, driverId: 'driver_unique_id'),
+        builder: (context) => ChatScreen(driverName: driverName, driverId: driverId),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final restaurant = Provider.of<Restaurant>(context);
-    final receipt = restaurant.generateReceipt();
-
+    final receipt = Provider.of<Restaurant>(context).generateReceipt();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: const Text('Delivery in Progress'),
         centerTitle: true,
       ),
-      bottomNavigationBar: _buildBottomNavBar(context),
+      bottomNavigationBar: _buildBottomNavBar(),
       body: Column(
         children: [
           MyReceipt(receipt: receipt),
@@ -114,7 +144,7 @@ class _DeliveryProgressPageState extends State<DeliveryProgressPage> {
     );
   }
 
-  Widget _buildBottomNavBar(BuildContext context) {
+  Widget _buildBottomNavBar() {
     return Container(
       height: 100,
       decoration: BoxDecoration(
@@ -140,30 +170,20 @@ class _DeliveryProgressPageState extends State<DeliveryProgressPage> {
             ),
           ),
           const SizedBox(width: 10),
-          // Driver details
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                driverName,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: Theme.of(context).colorScheme.inversePrimary,
-                ),
-              ),
-              Text(
-                'Driver',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
+              Text(driverName,
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: Theme.of(context).colorScheme.inversePrimary)),
+              const Text('Driver'),
             ],
           ),
           const Spacer(),
           Row(
             children: [
-              // Message button
               Container(
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.background,
@@ -171,14 +191,10 @@ class _DeliveryProgressPageState extends State<DeliveryProgressPage> {
                 ),
                 child: IconButton(
                   onPressed: _messageDriver,
-                  icon: Icon(
-                    Icons.message,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                  icon: Icon(Icons.message, color: Theme.of(context).colorScheme.primary),
                 ),
               ),
               const SizedBox(width: 10),
-              // Call button
               Container(
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.background,
@@ -186,10 +202,7 @@ class _DeliveryProgressPageState extends State<DeliveryProgressPage> {
                 ),
                 child: IconButton(
                   onPressed: _callDriver,
-                  icon: const Icon(
-                    Icons.call,
-                    color: Colors.green,
-                  ),
+                  icon: const Icon(Icons.call, color: Colors.green),
                 ),
               ),
             ],

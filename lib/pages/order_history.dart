@@ -1,23 +1,18 @@
-// pages/order_history.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class OrderHistoryPage extends StatelessWidget {
   const OrderHistoryPage({Key? key}) : super(key: key);
-
   Future<QuerySnapshot> _fetchOrders() {
     return FirebaseFirestore.instance
         .collection('orders')
         .orderBy('date', descending: true)
         .get();
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Order History'),
-      ),
+      appBar: AppBar(title: const Text('Order History')),
       body: FutureBuilder<QuerySnapshot>(
         future: _fetchOrders(),
         builder: (context, snapshot) {

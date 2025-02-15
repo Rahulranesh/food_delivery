@@ -1,13 +1,12 @@
-// components/my_current_location.dart
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:provider/provider.dart';
 import 'package:food_delivery/models/restaurant.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MyCurrentLocation extends StatefulWidget {
   const MyCurrentLocation({Key? key}) : super(key: key);
-
   @override
   State<MyCurrentLocation> createState() => _MyCurrentLocationState();
 }
@@ -19,7 +18,6 @@ class _MyCurrentLocationState extends State<MyCurrentLocation> {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // Check if location services are enabled.
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       ScaffoldMessenger.of(context)
@@ -27,7 +25,6 @@ class _MyCurrentLocationState extends State<MyCurrentLocation> {
       return;
     }
 
-    // Request permission.
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -44,10 +41,8 @@ class _MyCurrentLocationState extends State<MyCurrentLocation> {
       return;
     }
 
-    // Get the current position.
     Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
 
-    // Reverse geocode to get the address.
     List<Placemark> placemarks =
         await placemarkFromCoordinates(position.latitude, position.longitude);
     Placemark place = placemarks[0];
@@ -56,8 +51,9 @@ class _MyCurrentLocationState extends State<MyCurrentLocation> {
           "${place.street}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
     });
 
-    // Update the address in Restaurant provider.
     Provider.of<Restaurant>(context, listen: false).updateDeliveryAddress(currentAddress);
+    Provider.of<Restaurant>(context, listen: false)
+        .updateDeliveryCoordinates(GeoPoint(position.latitude, position.longitude));
   }
 
   @override
@@ -78,8 +74,7 @@ class _MyCurrentLocationState extends State<MyCurrentLocation> {
             children: [
               Expanded(
                 child: Consumer<Restaurant>(
-                  builder: (context, restaurant, child) =>
-                      Text(restaurant.deliveryAddress),
+                  builder: (context, restaurant, child) => Text(restaurant.deliveryAddress),
                 ),
               ),
               IconButton(
