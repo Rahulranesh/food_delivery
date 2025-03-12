@@ -103,7 +103,7 @@ List<Food> get popularFoods {
           cartItem.quantity;
       receiptBuffer.writeln('  Total: \$${itemTotal.toStringAsFixed(2)}');
     }
-    receiptBuffer.writeln('------------------------');
+    receiptBuffer.writeln('------------------------')
     receiptBuffer.writeln('Grand Total: \$${cart.fold(0.0, (sum, item) => sum + item.totalPrice).toStringAsFixed(2)}');
     receiptBuffer.writeln('Thank you for your order!');
     return receiptBuffer.toString();
